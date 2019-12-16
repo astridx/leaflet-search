@@ -1,19 +1,3 @@
-/* 
- * Leaflet Control Search v2.9.7 - 2019-01-14 
- * 
- * Copyright 2019 Stefano Cudini 
- * stefano.cudini@gmail.com 
- * http://labs.easyblog.it/ 
- * 
- * Licensed under the MIT license. 
- * 
- * Demo: 
- * http://labs.easyblog.it/maps/leaflet-search/ 
- * 
- * Source: 
- * git@github.com:stefanocudini/leaflet-search.git 
- * 
- */
 /*
 	Name					Data passed			   Description
 
@@ -150,8 +134,7 @@ L.Control.Search = L.Control.extend({
 	onAdd: function (map) {
 		this._map = map;
 		this._container = L.DomUtil.create('div', 'leaflet-control-search');
-		//this._input = this._createInput(this.options.textPlaceholder, 'search-input');
-
+		this._input = this._createInput(this.options.textPlaceholder, 'search-input');
 		this._tooltip = this._createTooltip('search-tooltip');
 		this._cancel = this._createCancel(this.options.textCancel, 'search-cancel');
 		this._button = this._createButton(this.options.textPlaceholder, 'search-button');
@@ -252,7 +235,13 @@ L.Control.Search = L.Control.extend({
 	
 	expand: function(toggle) {
 		toggle = typeof toggle === 'boolean' ? toggle : true;
-		this._input.style.display = 'block';
+		
+		//this._input.style.display = 'block';
+		this.list_gemarkungsname.style.display = 'block';
+		this.list_fln.style.display = 'block';
+		this.list_fsn_zae.style.display = 'block';
+		this.list_fsn_nen.style.display = 'block';
+		
 		L.DomUtil.addClass(this._container, 'search-exp');
 		if ( toggle !== false ) {
 			this._input.focus();
@@ -270,6 +259,11 @@ L.Control.Search = L.Control.extend({
 		if(this.options.collapsed)
 		{
 			this._input.style.display = 'none';
+			this.list_gemarkungsname.style.display = 'none';
+			this.list_fln.style.display = 'none';
+			this.list_fsn_zae.style.display = 'none';
+			this.list_fsn_nen.style.display = 'none';
+			
 			this._cancel.style.display = 'none';			
 			L.DomUtil.removeClass(this._container, 'search-exp');		
 			if (this.options.hideMarkerOnCollapse) {
@@ -311,6 +305,25 @@ L.Control.Search = L.Control.extend({
 	_createInput: function (text, className) {
 		var self = this;
 		var label = L.DomUtil.create('label', className, this._container);
+		
+		var list_gemarkungsname = this.list_gemarkungsname = L.DomUtil.create('select', className, this._container);
+		list_gemarkungsname.innerHTML = '<option>Gemarkungsname</option><option>Beetz</option><option>Sommerfeld</option><option>Flatow</option>';
+		list_gemarkungsname.id = "gemarkungsname";
+		list_gemarkungsname.style.display = 'none';
+		
+		var list_fln = this.list_fln = L.DomUtil.create('select', className, this._container);
+		list_fln.innerHTML = '<option>fln</option><option>5</option><option>6</option>';
+		list_fln.style.display = 'none';
+
+		var list_fsn_zae = this.list_fsn_zae = L.DomUtil.create('select', className, this._container);
+		list_fsn_zae.innerHTML = '<option>fsn_zae</option><option>97</option><option>6</option>';
+		list_fsn_zae.style.display = 'none';
+
+		var list_fsn_nen = this.list_fsn_nen = L.DomUtil.create('select', className, this._container);
+		list_fsn_nen.innerHTML = '<option>fsn_nen</option><option>1</option><option>6</option>';
+		list_fsn_nen.style.display = 'none';
+
+		
 		var input = L.DomUtil.create('input', className, this._container);
 		input.type = 'text';
 		input.size = this._inputMinSize;
@@ -750,7 +763,12 @@ L.Control.Search = L.Control.extend({
 
 		this._input.value = text;
 
-		this._input.style.display = 'block';
+		//this._input.style.display = 'block';
+		this.list_gemarkungsname.style.display = 'bloxk';
+		this.list_fln.style.display = 'blok';
+		this.list_fsn_zae.style.display = 'block';
+		this.list_fsn_nen.style.display = 'block';
+		
 		L.DomUtil.addClass(this._container, 'search-exp');
 
 		this._autoTypeTmp = false;

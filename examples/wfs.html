@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head> 
+<title></title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+<link rel="stylesheet" href="../src/leaflet-search.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+<div id="map"></div>
+
+
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+<script src="../src/leaflet-search.js"></script>
+<script>
+
+	var map = new L.Map('map', {zoom: 9, center: new L.latLng([50.27,7.1254]) });
+	map.addLayer(new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'));	//base layer
+	
+	map.addControl( new L.Control.Search({
+		//url: 'https://nominatim.openstreetmap.org/search?format=json&q={s}',
+		//url: 'http://localhost/geoserver/ows?service=WFS&version=1.1.1&request=GetFeature&typeName=sedhab%3Alote_siturb&CQL_FILTER=conjunto%20like%20%27{s}%27&outputFormat=application/json&format_options=json&SrsName=EPSG%3A4326&osm_type=N&limit=100&addressdetails=0&json_callback=L.Control.Search.callJsonp',
+		url: 'http://172.16.206.129:8080/ows?service=WFS&version=1.1.1&request=GetFeature&typeName=sedhab%3Alote_siturb&CQL_FILTER=conjunto%20like%20%27{s}%27&outputFormat=application/json&format_options=json&SrsName=EPSG%3A4326&osm_type=N&limit=100&addressdetails=0&json_callback=L.Control.Search.callJsonp',
+		jsonpParam: 'json_callback',
+		propertyName: 'display_name',
+		propertyLoc: ['lat','lon'],
+		marker: L.circleMarker([0,0],{radius:30}),
+		autoCollapse: true,
+		autoType: false,
+		minLength: 2
+	}) );
+
+</script>
+
+</body>
+</html>
