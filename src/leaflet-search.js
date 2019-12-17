@@ -20,6 +20,9 @@
 
 		options: {
 			url_list_gemarkungsnamen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:gemarkungsname&propertyName=gemarkungsname&outputFormat=JSON', //
+			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
+			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
+			url_list_fsn_nen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_nen&propertyName=fsn_nen&outputFormat=JSON', //
 			url: '', //url for search by ajax request, ex: "search.php?q={s}". Can be function to returns string for dynamic parameter setting
 			layer: null, //layer where search markers(is a L.LayerGroup)				
 			sourceData: null, //function to fill _recordsCache, passed searching text by first param and callback in second				
@@ -298,15 +301,15 @@
 			list_gemarkungsname.style.display = 'none';
 
 			var list_fln = this.list_fln = L.DomUtil.create('select', className, this._container);
-			list_fln.innerHTML = '<option>fln</option><option>5</option><option>6</option>';
+			list_fln.innerHTML = this._flnFromAjax();
 			list_fln.style.display = 'none';
 
 			var list_fsn_zae = this.list_fsn_zae = L.DomUtil.create('select', className, this._container);
-			list_fsn_zae.innerHTML = '<option>fsn_zae</option><option>97</option><option>6</option>';
+			list_fsn_zae.innerHTML = this._fsn_zaeFromAjax();;
 			list_fsn_zae.style.display = 'none';
 
 			var list_fsn_nen = this.list_fsn_nen = L.DomUtil.create('select', className, this._container);
-			list_fsn_nen.innerHTML = '<option>fsn_nen</option><option>1</option><option>6</option>';
+			list_fsn_nen.innerHTML = this._fsn_nenFromAjax();;
 			list_fsn_nen.style.display = 'none';
 
 
@@ -509,13 +512,9 @@
 
 		_gemarkungsnamenFromAjax: function (text, callAfter) {
 
-			console.log(this.options.url_list_gemarkungsnamen);
 			var xhttp_gemarkungsname = new XMLHttpRequest();
-			//xhttp_gemarkungsname.setRequestHeader("Content-Type", "text/xml");
 			xhttp_gemarkungsname.onreadystatechange = function () {
 				if (this.readyState == 4 && this.status == 200) {
-					//var data = xhttp_gemarkungsname.responseText;
-					// Action to be performed when the document is read;
 				}
 			};
 			xhttp_gemarkungsname.open("GET", this.options.url_list_gemarkungsnamen, false);
@@ -525,13 +524,73 @@
 			var features = json.features;
 			var gemarkungsnamen_as_options = '<option>Gemarkungsname</option>';
 			features.forEach(function (entry) {
-				console.log(entry.properties.gemarkungsname);
 				gemarkungsnamen_as_options = gemarkungsnamen_as_options + '<option value="' + entry.properties.gemarkungsname + '">' + entry.properties.gemarkungsname + '</option>'
-				
 			});
+
 			return gemarkungsnamen_as_options;
 		},
 
+		_flnFromAjax: function (text, callAfter) {
+
+			var xhttp_fln = new XMLHttpRequest();
+			xhttp_fln.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+				}
+			};
+			xhttp_fln.open("GET", this.options.url_list_fln + "&viewparams=gemarkungsname:Kremmen;", false);
+			xhttp_fln.send();
+
+			var json = JSON.parse(xhttp_fln.responseText);
+			var features = json.features;
+			var fln_as_options = '<option>fln</option>';
+			features.forEach(function (entry) {
+				fln_as_options = fln_as_options + '<option value="' + entry.properties.fln + '">' + entry.properties.fln + '</option>'
+			});
+
+			return fln_as_options;
+		},
+
+		_fsn_zaeFromAjax: function (text, callAfter) {
+
+			var xhttp_fsn_zae = new XMLHttpRequest();
+			xhttp_fsn_zae.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+				}
+			};
+			xhttp_fsn_zae.open("GET", this.options.url_list_fsn_zae + '&viewparams=gemarkungsname:Beetz', false);
+			xhttp_fsn_zae.send();
+
+			var json = JSON.parse(xhttp_fsn_zae.responseText);
+			var features = json.features;
+			var fsn_zae_as_options = '<option>fsn_zae</option>';
+			features.forEach(function (entry) {
+				fsn_zae_as_options = fsn_zae_as_options + '<option value="' + entry.properties.fsn_zae + '">' + entry.properties.fsn_zae + '</option>'
+			});
+
+			return fsn_zae_as_options;
+		},
+
+		_fsn_nenFromAjax: function (text, callAfter) {
+
+			var xhttp_fsn_nen = new XMLHttpRequest();
+			xhttp_fsn_nen.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+				}
+			};
+			xhttp_fsn_nen.open("GET", this.options.url_list_fsn_nen, false);
+			xhttp_fsn_nen.send();
+
+			var json = JSON.parse(xhttp_fsn_nen.responseText);
+			var features = json.features;
+			var fsn_nen_as_options = '<option>fsn_nen</option>';
+			features.forEach(function (entry) {
+				fsn_nen_as_options = fsn_nen_as_options + '<option value="' + entry.properties.fsn_nen + '">' + entry.properties.fsn_nen + '</option>'
+			});
+
+			return fsn_nen_as_options;
+		},
+
+	
 		_recordsFromJsonp: function (text, callAfter) {  //extract searched records from remote jsonp service
 			L.Control.Search.callJsonp = callAfter;
 			var script = L.DomUtil.create('script', 'leaflet-search-jsonp', document.getElementsByTagName('body')[0]),
