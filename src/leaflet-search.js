@@ -26,6 +26,7 @@
 			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
 			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
 			url_list_fsn_nen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_nen&propertyName=fsn_nen&outputFormat=JSON', //
+			url_list_result: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?request=GetFeature&service=WFS&version=2.0.0&StoredQuery_ID=gemarkungsname_fln_fsn_zae_sql_gemarkungsname&gemarkungsname=Beetz&fln=6&fsn_zae=97&fsn_nen=1&outputFormat=JSON',
 			propertyLoc: 'loc', //field for remapping location, using array: ['latname','lonname'] for select double fields(ex. ['lat','lon'] ) support dotted format: 'prop.subprop.title'
 			propertyName: 'title', //property in marker.options(or feature.properties for vector layer) trough filter elements in layer,
 			moveToLocation: null, //callback run on location found, params: latlng, title, map
@@ -76,11 +77,7 @@
 
 		initialize: function (options) {
 			L.Util.setOptions(this, options || {});
-			this._inputMinSize = this.options.textPlaceholder ? this.options.textPlaceholder.length : 10;
 			this._moveToLocation = this.options.moveToLocation || this._defaultMoveToLocation;
-			this._countertips = 0;		//number of tips items
-			this._recordsCache = {};	//key,value table! to store locations! format: key,latlng
-			this._curReq = null;
 		},
 
 		onAdd: function (map) {
@@ -105,9 +102,6 @@
 				this._markerSearch._isMarkerSearch = true;
 			}
 
-			map.on({
-				'resize': this._handleAutoresize
-			}, this);
 			return this._container;
 		},
 		addTo: function (map) {
@@ -124,16 +118,11 @@
 		},
 
 		onRemove: function (map) {
-			this._recordsCache = {};
-			map.off({
-				'resize': this._handleAutoresize
-			}, this);
 		},
 
 		cancel: function () {
 			this._input.value = '';
 			this._handleKeypress({keyCode: 8});
-			this._input.size = this._inputMinSize;
 			this._input.focus();
 			this._cancel.style.display = 'none';
 			this.fire('search:cancel');
@@ -204,7 +193,6 @@
 
 			var input = L.DomUtil.create('input', className, this._container);
 			input.type = 'text';
-			input.size = this._inputMinSize;
 			input.value = '';
 			input.autocomplete = 'off';
 			input.autocorrect = 'off';
@@ -383,7 +371,7 @@
 			return fsn_nen_as_options;
 		},
 
-		_handleKeypress: function (e) {	//run _input keyup event
+		_handleKeypress: function (e) {
 			var self = this;
 			console.log('keypress');
 
@@ -392,11 +380,6 @@
 				case 27://Esc
 				case 13://Enter
 					console.log("enter");
-				/*	if (this._countertips == 1 || (this._countertips > 0)) {
-						if (this._tooltip.currentSelection == -1) {
-							this._handleArrowSelect(1);
-						}
-					}*/
 					this._handleSubmit();	//do search
 					break;
 				case 38://Up
@@ -419,24 +402,6 @@
 				default://All keys
 			}
 
-			this._handleAutoresize();
-		},
-
-		_handleAutoresize: function () {
-			var maxWidth;
-
-			if (this._input.style.maxWidth !== this._map._container.offsetWidth) {
-				maxWidth = this._map._container.clientWidth;
-
-				// other side margin + padding + width border + width search-button + width search-cancel
-				maxWidth -= 10 + 20 + 1 + 30 + 22;
-
-				this._input.style.maxWidth = maxWidth.toString() + 'px';
-			}
-
-			if (this.options.autoResize && (this._container.offsetWidth + 20 < this._map._container.offsetWidth)) {
-				this._input.size = this._input.value.length < this._inputMinSize ? this._inputMinSize : this._input.value.length;
-			}
 		},
 
 		_handleArrowSelect: function (velocity) {
@@ -469,43 +434,32 @@
 		},
 
 		_handleSubmit: function () {
+			console.log('submit');
 
-			if (this._input.style.display == 'none')
-			{ //on first click show _input only
 				this.expand();
-				console.log('_handleSubmit:');
-			} else
-			{
-				var loc = this._getLocation(this._input.value);
-				this.showLocation(loc, this._input.value);
-				/*				if (this._input.value === '')	//hide _input only
-				 this.collapse();
-				 else
-				 {
-				 var loc = this._getLocation(this._input.value);
-				 
-				 if (loc === false)
-				 this.showAlert();
-				 else
-				 {
-				 this.showLocation(loc, this._input.value);
-				 this.fire('search:locationfound', {
-				 latlng: loc,
-				 text: this._input.value,
-				 layer: loc.layer ? loc.layer : null
-				 });
-				 }
-				 }*/
+				console.log('sub real');
+				var xhttp_loc = new XMLHttpRequest();
+				xhttp_loc.onreadystatechange = function () {
+					if (this.readyState == 4 && this.status == 200) {
+					}
+				};
+				xhttp_loc.open("GET", this.options.url_list_result, false);
+				xhttp_loc.send();
 
-			}
+				var json = JSON.parse(xhttp_loc.responseText);
+				var features = json.features;
+
+			features.forEach(function (entry) {
+					console.log(entry.properties.gemarkungsname);
+				});
+
+				/*				var loc = this._getLocation();
+				 this.showLocation(loc, this._input.value);*/
+
+			
 		},
 
-		_getLocation: function (key) {	//extract latlng from _recordsCache
-
-			/*if (this._recordsCache.hasOwnProperty(key))
-			 return this._recordsCache[key];//then after use .loc attribute
-			 else
-			 return false;*/
+		_getLocation: function () {
 		},
 
 		_defaultMoveToLocation: function (latlng, title, map) {
