@@ -60,7 +60,7 @@
 			marker: {//custom L.Marker or false for hide
 				icon: false, //custom L.Icon for maker location or false for hide
 				animate: true, //animate a circle over location found
-				circle: {//draw a circle in location found
+				circle: {
 					radius: 10,
 					weight: 3,
 					color: '#e03',
@@ -150,23 +150,10 @@
 
 		onRemove: function (map) {
 			this._recordsCache = {};
-			// map.off({
-			// 		'layeradd': this._onLayerAddRemove,
-			// 		'layerremove': this._onLayerAddRemove
-			// 	}, this);
 			map.off({
-				// 		'layeradd': this._onLayerAddRemove,
-				// 		'layerremove': this._onLayerAddRemove
 				'resize': this._handleAutoresize
 			}, this);
 		},
-
-		// _onLayerAddRemove: function(e) {
-		// 	//without this, run setLayer also for each Markers!! to optimize!
-		// 	if(e.layer instanceof L.LayerGroup)
-		// 		if( L.stamp(e.layer) != L.stamp(this._layer) )
-		// 			this.setLayer(e.layer);
-		// },
 
 		setLayer: function (layer) {	//set search layer at runtime
 			//this.options.layer = layer; //setting this, run only this._recordsFromLayer()
@@ -199,7 +186,6 @@
 			this._input.size = this._inputMinSize;
 			this._input.focus();
 			this._cancel.style.display = 'none';
-			this._hideTooltip();
 			this.fire('search:cancel');
 
 
@@ -229,12 +215,12 @@
 			//this._input.style.display = 'block';
 			this._cancel.style.display = 'block';
 			this.list_gemarkungsname.style.display = 'block';
-			if (this.list_fln)
+			/*if (this.list_fln)
 			{
 				this.list_fln.style.display = 'block';
 			}
 			this.list_fsn_zae.style.display = 'block';
-			this.list_fsn_nen.style.display = 'block';
+			this.list_fsn_nen.style.display = 'block';*/
 
 			L.DomUtil.addClass(this._container, 'search-exp');
 			/*if (toggle !== false) {
@@ -246,7 +232,7 @@
 		},
 
 		collapse: function () {
-			/*			this._hideTooltip();
+			/*			//this._hideTooltip();
 			 this.cancel();
 			 this._alert.style.display = 'none';
 			 this._input.blur();
@@ -360,24 +346,27 @@
 			if (this.list_fln)
 			{
 				this.list_fln.innerHTML = this._flnFromAjax();
+				this.list_fln.style.display = 'block';
 			}
-
+			this.list_fsn_nen.style.display = 'none';
+			this.list_fsn_zae.style.display = 'none';
 		},
 
 		_setFsn_zae: function (text, className) {
 			if (this.list_fsn_zae)
 			{
-				this.list_fln.innerHTML = this._flnFromAjax();
+				this.list_fsn_zae.innerHTML = this._fsn_zaeFromAjax();
+				this.list_fsn_zae.style.display = 'block';
 			}
-
+			this.list_fsn_nen.style.display = 'none';
 		},
 	
 		_setFsn_nen: function (text, className) {
-			if (this.list_nen)
+			if (this.list_fsn_nen)
 			{
-				this.list_fln.innerHTML = this._flnFromAjax();
+				this.list_fsn_nen.innerHTML = this._fsn_nenFromAjax();
+				this.list_fsn_nen.style.display = 'block';
 			}
-
 		},
 
 	_createCancel: function (title, className) {
@@ -425,44 +414,6 @@
 			return tool;
 		},
 
-		_createTip: function (text, val) {//val is object in recordCache, usually is Latlng
-			var tip;
-
-			if (this.options.buildTip)
-			{
-				tip = this.options.buildTip.call(this, text, val); //custom tip node or html string
-				if (typeof tip === 'string')
-				{
-					var tmpNode = L.DomUtil.create('div');
-					tmpNode.innerHTML = tip;
-					tip = tmpNode.firstChild;
-				}
-			} else
-			{
-				tip = L.DomUtil.create('li', '');
-				tip.innerHTML = text;
-			}
-
-			L.DomUtil.addClass(tip, 'search-tip');
-			tip._text = text; //value replaced in this._input and used by _autoType
-
-			if (this.options.tipAutoSubmit)
-				L.DomEvent
-					.disableClickPropagation(tip)
-					.on(tip, 'click', L.DomEvent.stop, this)
-					.on(tip, 'click', function (e) {
-						this._input.value = text;
-						this._handleAutoresize();
-						this._input.focus();
-						this._hideTooltip();
-						this._handleSubmit();
-					}, this);
-
-			return tip;
-		},
-
-		//////end DOM creations
-
 		_getUrl: function (text) {
 			return (typeof this.options.url === 'function') ? this.options.url(text) : this.options.url;
 		},
@@ -487,48 +438,6 @@
 			}
 
 			return frecords;
-		},
-
-		showTooltip: function (records) {
-
-
-			this._countertips = 0;
-			this._tooltip.innerHTML = '';
-			this._tooltip.currentSelection = -1;  //inizialized for _handleArrowSelect()
-
-			if (this.options.tooltipLimit)
-			{
-				for (var key in records)//fill tooltip
-				{
-					if (this._countertips === this.options.tooltipLimit)
-						break;
-
-					this._countertips++;
-
-					this._tooltip.appendChild(this._createTip(key, records[key]));
-				}
-			}
-
-			if (this._countertips > 0)
-			{
-				this._tooltip.style.display = 'block';
-
-				if (this._autoTypeTmp)
-					this._autoType();
-
-				this._autoTypeTmp = this.options.autoType;//reset default value
-			} else
-				this._hideTooltip();
-
-			this._tooltip.scrollTop = 0;
-
-			return this._countertips;
-		},
-
-		_hideTooltip: function () {
-			this._tooltip.style.display = 'none';
-			this._tooltip.innerHTML = '';
-			return 0;
 		},
 
 		_defaultFormatData: function (json) {	//default callback for format data to indexed data
@@ -609,9 +518,7 @@
 				if (this.readyState == 4 && this.status == 200) {
 				}
 			};
-			//var url = this.options.url_list_fsn_zae + "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ",fln:" + this._castValue(this.list_fln.value);
-			var url = this.options.url_list_fsn_zae ;//+ "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ",fln:" + this._castValue(this.list_fln.value);
-			console.log(url);
+			var url = this.options.url_list_fsn_zae + "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ";fln:" + this._castValue(this.list_fln.value);
 			xhttp_fsn_zae.open("GET", url, false);
 			xhttp_fsn_zae.send();
 
@@ -632,7 +539,8 @@
 				if (this.readyState == 4 && this.status == 200) {
 				}
 			};
-			xhttp_fsn_nen.open("GET", this.options.url_list_fsn_nen, false);
+			var url = this.options.url_list_fsn_nen + "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ";fln:" + this._castValue(this.list_fln.value) + ";fsn_zae:" + this._castValue(this.list_fsn_zae.value);
+			xhttp_fsn_nen.open("GET", url, false);
 			xhttp_fsn_nen.send();
 
 			var json = JSON.parse(xhttp_fsn_nen.responseText);
@@ -870,8 +778,7 @@
 							self._fillRecordsCache();
 
 						}, this.options.delayType);
-					} else
-						this._hideTooltip();
+					}
 			}
 
 			this._handleAutoresize();
@@ -913,8 +820,6 @@
 
 				records = this._filterData(this._input.value, this._recordsCache);
 
-				this.showTooltip(records);
-
 				L.DomUtil.removeClass(this._container, 'search-load');
 			} else
 			{
@@ -933,8 +838,6 @@
 						records = self._filterData(self._input.value, self._recordsCache);
 					else
 						records = self._recordsCache;
-
-					self.showTooltip(records);
 
 					L.DomUtil.removeClass(self._container, 'search-load');
 				});
@@ -992,7 +895,7 @@
 			this._hideAutoType();
 
 			this.hideAlert();
-			this._hideTooltip();
+			//this._hideTooltip();
 
 			if (this._input.style.display == 'none')	//on first click show _input only
 				this.expand();
@@ -1162,5 +1065,3 @@
 	return L.Control.Search;
 
 });
-
-
