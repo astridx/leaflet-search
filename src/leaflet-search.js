@@ -26,21 +26,14 @@
 			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
 			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
 			url_list_fsn_nen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_nen&propertyName=fsn_nen&outputFormat=JSON', //
-			jsonpParam: null, //jsonp param name for search by jsonp service, ex: "callback"
 			propertyLoc: 'loc', //field for remapping location, using array: ['latname','lonname'] for select double fields(ex. ['lat','lon'] ) support dotted format: 'prop.subprop.title'
 			propertyName: 'title', //property in marker.options(or feature.properties for vector layer) trough filter elements in layer,
 			moveToLocation: null, //callback run on location found, params: latlng, title, map
-			buildTip: null, //function to return row tip html node(or html string), receive text tooltip in first param
 			container: '', //container id to insert Search Control		
-			zoom: null, //default zoom level for move to location
 			minLength: 1, //minimal text length for autocomplete
 			initial: true, //search elements only by initial text
 			casesensitive: false, //search elements in case sensitive text
-			autoType: true, //complete input with first suggested result and select this filled-in text.
 			delayType: 400, //delay while typing for show tooltip
-			tooltipLimit: -1, //limit max results to show in tooltip. -1 for no limit, 0 for no results
-			tipAutoSubmit: true, //auto map panTo when click on tooltip
-			firstTipSubmit: false, //auto select first result con enter click
 			autoResize: true, //autoresize on input change
 			collapsed: true, //collapse search control at startup
 			autoCollapse: false, //collapse search control after submit(on button or on tips if enabled tipAutoSubmit)
@@ -85,7 +78,6 @@
 			L.Util.setOptions(this, options || {});
 			this._inputMinSize = this.options.textPlaceholder ? this.options.textPlaceholder.length : 10;
 			this._moveToLocation = this.options.moveToLocation || this._defaultMoveToLocation;
-			this._autoTypeTmp = this.options.autoType;	//useful for disable autoType temporarily in delete/backspace keydown
 			this._countertips = 0;		//number of tips items
 			this._recordsCache = {};	//key,value table! to store locations! format: key,latlng
 			this._curReq = null;
@@ -95,11 +87,9 @@
 			this._map = map;
 			this._container = L.DomUtil.create('div', 'leaflet-control-search');
 			this._input = this._createInput(this.options.textPlaceholder, 'search-input');
-			this._tooltip = this._createTooltip('search-tooltip');
 			this._cancel = this._createCancel(this.options.textCancel, 'search-cancel');
 
 			this._button = this._createButton(this.options.textPlaceholder, 'search-button');
-			this._alert = this._createAlert('search-alert');
 
 			if (this.options.collapsed === false)
 				this.expand(this.options.collapsed);
@@ -138,24 +128,6 @@
 			map.off({
 				'resize': this._handleAutoresize
 			}, this);
-		},
-
-		showAlert: function (text) {
-			var self = this;
-			text = text || this.options.textErr;
-			this._alert.style.display = 'block';
-			this._alert.innerHTML = text;
-			clearTimeout(this.timerAlert);
-
-			this.timerAlert = setTimeout(function () {
-				self.hideAlert();
-			}, this.options.autoCollapseTime);
-			return this;
-		},
-
-		hideAlert: function () {
-			this._alert.style.display = 'none';
-			return this;
 		},
 
 		cancel: function () {
@@ -202,34 +174,6 @@
 
 		collapse: function () {
 			this.cancel();
-		},
-
-		collapseDelayed: function () {	//collapse after delay, used on_input blur
-			var self = this;
-			if (!this.options.autoCollapse)
-				return this;
-			clearTimeout(this.timerCollapse);
-			this.timerCollapse = setTimeout(function () {
-				self.collapse();
-			}, this.options.autoCollapseTime);
-			return this;
-		},
-
-		collapseDelayedStop: function () {
-			clearTimeout(this.timerCollapse);
-			return this;
-		},
-
-		////start DOM creations
-		_createAlert: function (className) {
-			var alert = L.DomUtil.create('div', className, this._container);
-			alert.style.display = 'none';
-
-			L.DomEvent
-				.on(alert, 'click', L.DomEvent.stop, this)
-				.on(alert, 'click', this.hideAlert, this);
-
-			return alert;
 		},
 
 		_createInput: function (text, className) {
@@ -282,8 +226,6 @@
 						self._handleKeypress(e);
 					}, 10, e);
 				}, this)
-				//.on(input, 'blur', this.collapseDelayed, this)
-				//.on(input, 'focus', this.collapseDelayedStop, this)
 				.on(list_gemarkungsname, 'change', this._setFln, this)
 				.on(list_fln, 'change', this._setFsn_zae, this)
 				.on(list_fsn_zae, 'change', this._setFsn_nen, this);
@@ -339,28 +281,9 @@
 
 			L.DomEvent
 				.on(button, 'click', L.DomEvent.stop, this)
-				.on(button, 'click', this._handleSubmit, this)
-				.on(button, 'focus', this.collapseDelayedStop, this)
-				.on(button, 'blur', this.collapseDelayed, this);
+				.on(button, 'click', this._handleSubmit, this);
 
 			return button;
-		},
-
-		_createTooltip: function (className) {
-			var self = this;
-			var tool = L.DomUtil.create('ul', className, this._container);
-			tool.style.display = 'none';
-			L.DomEvent
-				.disableClickPropagation(tool)
-				.on(tool, 'blur', this.collapseDelayed, this)
-				.on(tool, 'mousewheel', function (e) {
-					self.collapseDelayedStop();
-					L.DomEvent.stopPropagation(e);//disable zoom map
-				}, this)
-				.on(tool, 'mouseover', function (e) {
-					self.collapseDelayedStop();
-				}, this);
-			return tool;
 		},
 
 		_gemarkungsnamenFromAjax: function (text, callAfter) {
@@ -460,51 +383,6 @@
 			return fsn_nen_as_options;
 		},
 
-		_autoType: function () {
-			var start = this._input.value.length,
-				firstRecord = this._tooltip.firstChild ? this._tooltip.firstChild._text : '',
-				end = firstRecord.length;
-
-			if (firstRecord.indexOf(this._input.value) === 0) { 
-				this._input.value = firstRecord;
-				this._handleAutoresize();
-
-				if (this._input.createTextRange) {
-					var selRange = this._input.createTextRange();
-					selRange.collapse(true);
-					selRange.moveStart('character', start);
-					selRange.moveEnd('character', end);
-					selRange.select();
-				} else if (this._input.setSelectionRange) {
-					this._input.setSelectionRange(start, end);
-				} else if (this._input.selectionStart) {
-					this._input.selectionStart = start;
-					this._input.selectionEnd = end;
-				}
-			}
-		},
-
-		_hideAutoType: function () {	// deselect text:
-
-			/*var sel;
-			 if ((sel = this._input.selection) && sel.empty) {
-			 sel.empty();
-			 } else if (this._input.createTextRange) {
-			 sel = this._input.createTextRange();
-			 sel.collapse(true);
-			 var end = this._input.value.length;
-			 sel.moveStart('character', end);
-			 sel.moveEnd('character', end);
-			 sel.select();
-			 } else {
-			 if (this._input.getSelection) {
-			 this._input.getSelection().removeAllRanges();
-			 }
-			 this._input.selectionStart = this._input.selectionEnd;
-			 }*/
-			console.log('hideautotype');
-		},
-
 		_handleKeypress: function (e) {	//run _input keyup event
 			var self = this;
 			console.log('keypress');
@@ -514,7 +392,7 @@
 				case 27://Esc
 				case 13://Enter
 					console.log("enter");
-				/*	if (this._countertips == 1 || (this.options.firstTipSubmit && this._countertips > 0)) {
+				/*	if (this._countertips == 1 || (this._countertips > 0)) {
 						if (this._tooltip.currentSelection == -1) {
 							this._handleArrowSelect(1);
 						}
@@ -530,7 +408,6 @@
 				case  8://Backspace
 				case 45://Insert
 				case 46://Delete
-					this._autoTypeTmp = false;//disable temporarily autoType
 					break;
 				case 37://Left
 				case 39://Right
@@ -593,12 +470,6 @@
 
 		_handleSubmit: function () {
 
-			this._hideAutoType();
-			console.log('handelsubmit');
-
-			this.hideAlert();
-			//this._hideTooltip();
-
 			if (this._input.style.display == 'none')
 			{ //on first click show _input only
 				this.expand();
@@ -638,10 +509,7 @@
 		},
 
 		_defaultMoveToLocation: function (latlng, title, map) {
-			if (this.options.zoom)
-				this._map.setView(latlng, this.options.zoom);
-			else
-				this._map.panTo(latlng);
+			this._map.panTo(latlng);
 		},
 
 		showLocation: function (latlng, title) {
