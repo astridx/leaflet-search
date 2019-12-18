@@ -19,6 +19,10 @@
 		includes: L.version[0] === '1' ? L.Evented.prototype : L.Mixin.Events,
 
 		options: {
+			placeholder_gemarkungsname: 'Gemarkungsname_',
+			placeholder_fln: 'fln_',
+			placeholder_fsn_zae: 'fsn_zae_',
+			placeholder_fsn_nen: 'fsn_nen_	',			
 			url_list_gemarkungsnamen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:gemarkungsname&propertyName=gemarkungsname&outputFormat=JSON', //
 			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
 			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
@@ -104,7 +108,7 @@
 			this._input = this._createInput(this.options.textPlaceholder, 'search-input');
 			this._tooltip = this._createTooltip('search-tooltip');
 			this._cancel = this._createCancel(this.options.textCancel, 'search-cancel');
-			
+
 			this._button = this._createButton(this.options.textPlaceholder, 'search-button');
 			this._alert = this._createAlert('search-alert');
 
@@ -198,7 +202,7 @@
 			this._hideTooltip();
 			this.fire('search:cancel');
 
-			
+
 			if (this.options.collapsed)
 			{
 				this._input.style.display = 'none';
@@ -215,7 +219,7 @@
 				this._map.off('dragstart click', this.collapse, this);
 			}
 			this.fire('search:collapsed');
-			
+
 			return this;
 		},
 
@@ -225,41 +229,44 @@
 			//this._input.style.display = 'block';
 			this._cancel.style.display = 'block';
 			this.list_gemarkungsname.style.display = 'block';
-			this.list_fln.style.display = 'block';
+			if (this.list_fln)
+			{
+				this.list_fln.style.display = 'block';
+			}
 			this.list_fsn_zae.style.display = 'block';
 			this.list_fsn_nen.style.display = 'block';
 
 			L.DomUtil.addClass(this._container, 'search-exp');
 			/*if (toggle !== false) {
-				this._input.focus();
-				this._map.on('dragstart click', this.collapse, this);
-			}*/
+			 this._input.focus();
+			 this._map.on('dragstart click', this.collapse, this);
+			 }*/
 			this.fire('search:expanded');
 			return this;
 		},
 
 		collapse: function () {
-/*			this._hideTooltip();
-			this.cancel();
-			this._alert.style.display = 'none';
-			this._input.blur();
-			if (this.options.collapsed)
-			{
-				this._input.style.display = 'none';
-				this.list_gemarkungsname.style.display = 'none';
-				this.list_fln.style.display = 'none';
-				this.list_fsn_zae.style.display = 'none';
-				this.list_fsn_nen.style.display = 'none';
-
-				this._cancel.style.display = 'none';
-				L.DomUtil.removeClass(this._container, 'search-exp');
-				if (this.options.hideMarkerOnCollapse) {
-					this._map.removeLayer(this._markerSearch);
-				}
-				this._map.off('dragstart click', this.collapse, this);
-			}
-			this.fire('search:collapsed');
-			return this;*/
+			/*			this._hideTooltip();
+			 this.cancel();
+			 this._alert.style.display = 'none';
+			 this._input.blur();
+			 if (this.options.collapsed)
+			 {
+			 this._input.style.display = 'none';
+			 this.list_gemarkungsname.style.display = 'none';
+			 this.list_fln.style.display = 'none';
+			 this.list_fsn_zae.style.display = 'none';
+			 this.list_fsn_nen.style.display = 'none';
+			 
+			 this._cancel.style.display = 'none';
+			 L.DomUtil.removeClass(this._container, 'search-exp');
+			 if (this.options.hideMarkerOnCollapse) {
+			 this._map.removeLayer(this._markerSearch);
+			 }
+			 this._map.off('dragstart click', this.collapse, this);
+			 }
+			 this.fire('search:collapsed');
+			 return this;*/
 		},
 
 		collapseDelayed: function () {	//collapse after delay, used on_input blur
@@ -302,14 +309,17 @@
 
 			var list_fln = this.list_fln = L.DomUtil.create('select', className, this._container);
 			list_fln.innerHTML = this._flnFromAjax();
+			list_fln.id = "fln";
 			list_fln.style.display = 'none';
 
 			var list_fsn_zae = this.list_fsn_zae = L.DomUtil.create('select', className, this._container);
-			list_fsn_zae.innerHTML = this._fsn_zaeFromAjax();;
+			list_fsn_zae.innerHTML = this._fsn_zaeFromAjax();
+			list_fsn_zae.id = "fsn_zae";
 			list_fsn_zae.style.display = 'none';
 
 			var list_fsn_nen = this.list_fsn_nen = L.DomUtil.create('select', className, this._container);
-			list_fsn_nen.innerHTML = this._fsn_nenFromAjax();;
+			list_fsn_nen.innerHTML = this._fsn_nenFromAjax();
+			list_fsn_nen.id = "fsn_nen";
 			list_fsn_nen.style.display = 'none';
 
 
@@ -338,12 +348,39 @@
 					}, 10, e);
 				}, this)
 				.on(input, 'blur', this.collapseDelayed, this)
-				.on(input, 'focus', this.collapseDelayedStop, this);
+				.on(input, 'focus', this.collapseDelayedStop, this)
+				.on(list_gemarkungsname, 'change', this._setFln, this)
+				.on(list_fln, 'change', this._setFsn_zae, this)
+				.on(list_fsn_zae, 'change', this._setFsn_nen, this);
 
 			return input;
 		},
 
-		_createCancel: function (title, className) {
+		_setFln: function (text, className) {
+			if (this.list_fln)
+			{
+				this.list_fln.innerHTML = this._flnFromAjax();
+			}
+
+		},
+
+		_setFsn_zae: function (text, className) {
+			if (this.list_fsn_zae)
+			{
+				this.list_fln.innerHTML = this._flnFromAjax();
+			}
+
+		},
+	
+		_setFsn_nen: function (text, className) {
+			if (this.list_nen)
+			{
+				this.list_fln.innerHTML = this._flnFromAjax();
+			}
+
+		},
+
+	_createCancel: function (title, className) {
 			var cancel = L.DomUtil.create('a', className, this._container);
 			cancel.href = '#';
 			cancel.title = title;
@@ -360,7 +397,7 @@
 		_createButton: function (title, className) {
 			var button = L.DomUtil.create('a', className, this._container);
 			button.href = '#';
-			button.title = title;
+			button.title = 'jj';
 
 			L.DomEvent
 				.on(button, 'click', L.DomEvent.stop, this)
@@ -522,7 +559,7 @@
 
 			var json = JSON.parse(xhttp_gemarkungsname.responseText);
 			var features = json.features;
-			var gemarkungsnamen_as_options = '<option>Gemarkungsname</option>';
+			var gemarkungsnamen_as_options = '<option>' + this.options.placeholder_gemarkungsname + '</option>';
 			features.forEach(function (entry) {
 				gemarkungsnamen_as_options = gemarkungsnamen_as_options + '<option value="' + entry.properties.gemarkungsname + '">' + entry.properties.gemarkungsname + '</option>'
 			});
@@ -530,6 +567,20 @@
 			return gemarkungsnamen_as_options;
 		},
 
+		_castValue: function (value) {
+			
+			var castedvalue = value;
+			var castedvalue = castedvalue.replace("ä", "_");
+			var castedvalue = castedvalue.replace(" ", "_");
+			var castedvalue = castedvalue.replace("ü", "_");
+			var castedvalue = castedvalue.replace(")", "_");
+			var castedvalue = castedvalue.replace("(", "_");
+			var castedvalue = castedvalue.replace("-", "_");
+			
+			return castedvalue;
+			
+		},
+		
 		_flnFromAjax: function (text, callAfter) {
 
 			var xhttp_fln = new XMLHttpRequest();
@@ -537,12 +588,13 @@
 				if (this.readyState == 4 && this.status == 200) {
 				}
 			};
-			xhttp_fln.open("GET", this.options.url_list_fln + "&viewparams=gemarkungsname:Kremmen;", false);
+
+			xhttp_fln.open("GET", this.options.url_list_fln + "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value), false);
 			xhttp_fln.send();
 
 			var json = JSON.parse(xhttp_fln.responseText);
 			var features = json.features;
-			var fln_as_options = '<option>fln</option>';
+			var fln_as_options = '<option>' + this.options.placeholder_fln + '</option>';
 			features.forEach(function (entry) {
 				fln_as_options = fln_as_options + '<option value="' + entry.properties.fln + '">' + entry.properties.fln + '</option>'
 			});
@@ -557,12 +609,15 @@
 				if (this.readyState == 4 && this.status == 200) {
 				}
 			};
-			xhttp_fsn_zae.open("GET", this.options.url_list_fsn_zae + '&viewparams=gemarkungsname:Beetz', false);
+			//var url = this.options.url_list_fsn_zae + "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ",fln:" + this._castValue(this.list_fln.value);
+			var url = this.options.url_list_fsn_zae ;//+ "&viewparams=gemarkungsname:" + this._castValue(this.list_gemarkungsname.value) + ",fln:" + this._castValue(this.list_fln.value);
+			console.log(url);
+			xhttp_fsn_zae.open("GET", url, false);
 			xhttp_fsn_zae.send();
 
 			var json = JSON.parse(xhttp_fsn_zae.responseText);
 			var features = json.features;
-			var fsn_zae_as_options = '<option>fsn_zae</option>';
+			var fsn_zae_as_options = '<option>' + this.options.placeholder_fsn_zae + '</option>';
 			features.forEach(function (entry) {
 				fsn_zae_as_options = fsn_zae_as_options + '<option value="' + entry.properties.fsn_zae + '">' + entry.properties.fsn_zae + '</option>'
 			});
@@ -582,7 +637,7 @@
 
 			var json = JSON.parse(xhttp_fsn_nen.responseText);
 			var features = json.features;
-			var fsn_nen_as_options = '<option>fsn_nen</option>';
+			var fsn_nen_as_options = '<option>' + this.options.placeholder_fsn_nen + '</option>';
 			features.forEach(function (entry) {
 				fsn_nen_as_options = fsn_nen_as_options + '<option value="' + entry.properties.fsn_nen + '">' + entry.properties.fsn_nen + '</option>'
 			});
@@ -590,7 +645,6 @@
 			return fsn_nen_as_options;
 		},
 
-	
 		_recordsFromJsonp: function (text, callAfter) {  //extract searched records from remote jsonp service
 			L.Control.Search.callJsonp = callAfter;
 			var script = L.DomUtil.create('script', 'leaflet-search-jsonp', document.getElementsByTagName('body')[0]),
@@ -806,7 +860,7 @@
 					if (true)
 						this._cancel.style.display = 'block';
 					else
-						//this._cancel.style.display = 'none';
+					//this._cancel.style.display = 'none';
 
 					if (this._input.value.length >= this.options.minLength)
 					{
