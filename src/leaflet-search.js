@@ -22,20 +22,14 @@
 			placeholder_gemarkungsname: 'Gemarkungsname_',
 			placeholder_fln: 'fln_',
 			placeholder_fsn_zae: 'fsn_zae_',
-			placeholder_fsn_nen: 'fsn_nen_	',			
+			placeholder_fsn_nen: 'fsn_nen_	',
 			url_list_gemarkungsnamen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:gemarkungsname&propertyName=gemarkungsname&outputFormat=JSON', //
 			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
 			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
 			url_list_fsn_nen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_nen&propertyName=fsn_nen&outputFormat=JSON', //
-			url: '', //url for search by ajax request, ex: "search.php?q={s}". Can be function to returns string for dynamic parameter setting
-			layer: null, //layer where search markers(is a L.LayerGroup)				
-			sourceData: null, //function to fill _recordsCache, passed searching text by first param and callback in second				
-			//TODO implements uniq option 'sourceData' to recognizes source type: url,array,callback or layer				
 			jsonpParam: null, //jsonp param name for search by jsonp service, ex: "callback"
 			propertyLoc: 'loc', //field for remapping location, using array: ['latname','lonname'] for select double fields(ex. ['lat','lon'] ) support dotted format: 'prop.subprop.title'
 			propertyName: 'title', //property in marker.options(or feature.properties for vector layer) trough filter elements in layer,
-			formatData: null, //callback for reformat all data from source to indexed data object
-			filterData: null, //callback for filtering data from text searched, params: textSearch, allRecords
 			moveToLocation: null, //callback run on location found, params: latlng, title, map
 			buildTip: null, //function to return row tip html node(or html string), receive text tooltip in first param
 			container: '', //container id to insert Search Control		
@@ -92,9 +86,6 @@
 		initialize: function (options) {
 			L.Util.setOptions(this, options || {});
 			this._inputMinSize = this.options.textPlaceholder ? this.options.textPlaceholder.length : 10;
-			this._layer = this.options.layer || new L.LayerGroup();
-			this._filterData = this.options.filterData || this._defaultFilterData;
-			this._formatData = this.options.formatData || this._defaultFormatData;
 			this._moveToLocation = this.options.moveToLocation || this._defaultMoveToLocation;
 			this._autoTypeTmp = this.options.autoType;	//useful for disable autoType temporarily in delete/backspace keydown
 			this._countertips = 0;		//number of tips items
@@ -126,11 +117,7 @@
 				this._markerSearch._isMarkerSearch = true;
 			}
 
-			this.setLayer(this._layer);
-
 			map.on({
-				// 		'layeradd': this._onLayerAddRemove,
-				// 		'layerremove': this._onLayerAddRemove
 				'resize': this._handleAutoresize
 			}, this);
 			return this._container;
@@ -155,13 +142,6 @@
 			}, this);
 		},
 
-		setLayer: function (layer) {	//set search layer at runtime
-			//this.options.layer = layer; //setting this, run only this._recordsFromLayer()
-			this._layer = layer;
-			this._layer.addTo(this._map);
-			return this;
-		},
-
 		showAlert: function (text) {
 			var self = this;
 			text = text || this.options.textErr;
@@ -182,7 +162,7 @@
 
 		cancel: function () {
 			this._input.value = '';
-			this._handleKeypress({keyCode: 8});//simulate backspace keypress
+			this._handleKeypress({keyCode: 8});
 			this._input.size = this._inputMinSize;
 			this._input.focus();
 			this._cancel.style.display = 'none';
@@ -212,47 +192,18 @@
 		expand: function (toggle) {
 			toggle = typeof toggle === 'boolean' ? toggle : true;
 
-			//this._input.style.display = 'block';
 			this._cancel.style.display = 'block';
 			this.list_gemarkungsname.style.display = 'block';
-			/*if (this.list_fln)
-			{
-				this.list_fln.style.display = 'block';
-			}
-			this.list_fsn_zae.style.display = 'block';
-			this.list_fsn_nen.style.display = 'block';*/
 
 			L.DomUtil.addClass(this._container, 'search-exp');
-			/*if (toggle !== false) {
-			 this._input.focus();
-			 this._map.on('dragstart click', this.collapse, this);
-			 }*/
+
 			this.fire('search:expanded');
+
 			return this;
 		},
 
 		collapse: function () {
-			/*			//this._hideTooltip();
-			 this.cancel();
-			 this._alert.style.display = 'none';
-			 this._input.blur();
-			 if (this.options.collapsed)
-			 {
-			 this._input.style.display = 'none';
-			 this.list_gemarkungsname.style.display = 'none';
-			 this.list_fln.style.display = 'none';
-			 this.list_fsn_zae.style.display = 'none';
-			 this.list_fsn_nen.style.display = 'none';
-			 
-			 this._cancel.style.display = 'none';
-			 L.DomUtil.removeClass(this._container, 'search-exp');
-			 if (this.options.hideMarkerOnCollapse) {
-			 this._map.removeLayer(this._markerSearch);
-			 }
-			 this._map.off('dragstart click', this.collapse, this);
-			 }
-			 this.fire('search:collapsed');
-			 return this;*/
+			this.cancel();
 		},
 
 		collapseDelayed: function () {	//collapse after delay, used on_input blur
@@ -333,8 +284,8 @@
 						self._handleKeypress(e);
 					}, 10, e);
 				}, this)
-				.on(input, 'blur', this.collapseDelayed, this)
-				.on(input, 'focus', this.collapseDelayedStop, this)
+				//.on(input, 'blur', this.collapseDelayed, this)
+				//.on(input, 'focus', this.collapseDelayedStop, this)
 				.on(list_gemarkungsname, 'change', this._setFln, this)
 				.on(list_fln, 'change', this._setFsn_zae, this)
 				.on(list_fsn_zae, 'change', this._setFsn_nen, this);
@@ -360,7 +311,7 @@
 			}
 			this.list_fsn_nen.style.display = 'none';
 		},
-	
+
 		_setFsn_nen: function (text, className) {
 			if (this.list_fsn_nen)
 			{
@@ -369,7 +320,7 @@
 			}
 		},
 
-	_createCancel: function (title, className) {
+		_createCancel: function (title, className) {
 			var cancel = L.DomUtil.create('a', className, this._container);
 			cancel.href = '#';
 			cancel.title = title;
@@ -414,48 +365,6 @@
 			return tool;
 		},
 
-		_getUrl: function (text) {
-			return (typeof this.options.url === 'function') ? this.options.url(text) : this.options.url;
-		},
-
-		_defaultFilterData: function (text, records) {
-
-			var I, icase, regSearch, frecords = {};
-
-			text = text.replace(/[.*+?^${}()|[\]\\]/g, '');  //sanitize remove all special characters
-			if (text === '')
-				return [];
-
-			I = this.options.initial ? '^' : '';  //search only initial text
-			icase = !this.options.casesensitive ? 'i' : undefined;
-
-			regSearch = new RegExp(I + text, icase);
-
-			//TODO use .filter or .map
-			for (var key in records) {
-				if (regSearch.test(key))
-					frecords[key] = records[key];
-			}
-
-			return frecords;
-		},
-
-		_defaultFormatData: function (json) {	//default callback for format data to indexed data
-			var self = this,
-				propName = this.options.propertyName,
-				propLoc = this.options.propertyLoc,
-				i, jsonret = {};
-
-			if (L.Util.isArray(propLoc))
-				for (i in json)
-					jsonret[ self._getPath(json[i], propName) ] = L.latLng(json[i][ propLoc[0] ], json[i][ propLoc[1] ]);
-			else
-				for (i in json)
-					jsonret[ self._getPath(json[i], propName) ] = L.latLng(self._getPath(json[i], propLoc));
-			//TODO throw new Error("propertyName '"+propName+"' not found in JSON data");
-			return jsonret;
-		},
-
 		_gemarkungsnamenFromAjax: function (text, callAfter) {
 
 			var xhttp_gemarkungsname = new XMLHttpRequest();
@@ -468,7 +377,7 @@
 
 			var json = JSON.parse(xhttp_gemarkungsname.responseText);
 			var features = json.features;
-			var gemarkungsnamen_as_options = '<option>' + this.options.placeholder_gemarkungsname + '</option>';
+			var gemarkungsnamen_as_options = '<option value="' + this.options.placeholder_gemarkungsname + '">' + this.options.placeholder_gemarkungsname + '</option>';
 			features.forEach(function (entry) {
 				gemarkungsnamen_as_options = gemarkungsnamen_as_options + '<option value="' + entry.properties.gemarkungsname + '">' + entry.properties.gemarkungsname + '</option>'
 			});
@@ -477,7 +386,7 @@
 		},
 
 		_castValue: function (value) {
-			
+
 			var castedvalue = value;
 			var castedvalue = castedvalue.replace("ä", "_");
 			var castedvalue = castedvalue.replace(" ", "_");
@@ -485,11 +394,11 @@
 			var castedvalue = castedvalue.replace(")", "_");
 			var castedvalue = castedvalue.replace("(", "_");
 			var castedvalue = castedvalue.replace("-", "_");
-			
+
 			return castedvalue;
-			
+
 		},
-		
+
 		_flnFromAjax: function (text, callAfter) {
 
 			var xhttp_fln = new XMLHttpRequest();
@@ -503,7 +412,7 @@
 
 			var json = JSON.parse(xhttp_fln.responseText);
 			var features = json.features;
-			var fln_as_options = '<option>' + this.options.placeholder_fln + '</option>';
+			var fln_as_options = '<option value="' + this.options.placeholder_fln + '">' + this.options.placeholder_fln + '</option>';
 			features.forEach(function (entry) {
 				fln_as_options = fln_as_options + '<option value="' + entry.properties.fln + '">' + entry.properties.fln + '</option>'
 			});
@@ -524,7 +433,7 @@
 
 			var json = JSON.parse(xhttp_fsn_zae.responseText);
 			var features = json.features;
-			var fsn_zae_as_options = '<option>' + this.options.placeholder_fsn_zae + '</option>';
+			var fsn_zae_as_options = '<option value="' + this.options.placeholder_fsn_zae + '">' + this.options.placeholder_fsn_zae + '</option>';
 			features.forEach(function (entry) {
 				fsn_zae_as_options = fsn_zae_as_options + '<option value="' + entry.properties.fsn_zae + '">' + entry.properties.fsn_zae + '</option>'
 			});
@@ -545,7 +454,7 @@
 
 			var json = JSON.parse(xhttp_fsn_nen.responseText);
 			var features = json.features;
-			var fsn_nen_as_options = '<option>' + this.options.placeholder_fsn_nen + '</option>';
+			var fsn_nen_as_options = '<option value="' + this.options.placeholder_fsn_nen + '">' + this.options.placeholder_fsn_nen + '</option>';
 			features.forEach(function (entry) {
 				fsn_nen_as_options = fsn_nen_as_options + '<option value="' + entry.properties.fsn_nen + '">' + entry.properties.fsn_nen + '</option>'
 			});
@@ -553,144 +462,12 @@
 			return fsn_nen_as_options;
 		},
 
-		_recordsFromJsonp: function (text, callAfter) {  //extract searched records from remote jsonp service
-			L.Control.Search.callJsonp = callAfter;
-			var script = L.DomUtil.create('script', 'leaflet-search-jsonp', document.getElementsByTagName('body')[0]),
-				url = L.Util.template(this._getUrl(text) + '&' + this.options.jsonpParam + '=L.Control.Search.callJsonp', {s: text}); //parsing url
-			//rnd = '&_='+Math.floor(Math.random()*10000);
-			//TODO add rnd param or randomize callback name! in recordsFromJsonp
-			script.type = 'text/javascript';
-			script.src = url;
-			return {
-				abort: function () {
-					script.parentNode.removeChild(script);
-				}
-			};
-		},
-
-		_recordsFromAjax: function (text, callAfter) {	//Ajax request
-			if (window.XMLHttpRequest === undefined) {
-				window.XMLHttpRequest = function () {
-					try {
-						return new ActiveXObject("Microsoft.XMLHTTP.6.0");
-					} catch (e1) {
-						try {
-							return new ActiveXObject("Microsoft.XMLHTTP.3.0");
-						} catch (e2) {
-							throw new Error("XMLHttpRequest is not supported");
-						}
-					}
-				};
-			}
-			var IE8or9 = (L.Browser.ie && !window.atob && document.querySelector),
-				request = IE8or9 ? new XDomainRequest() : new XMLHttpRequest(),
-				url = L.Util.template(this._getUrl(text), {s: text});
-
-			//rnd = '&_='+Math.floor(Math.random()*10000);
-			//TODO add rnd param or randomize callback name! in recordsFromAjax			
-
-			request.open("GET", url);
-
-
-			request.onload = function () {
-				callAfter(JSON.parse(request.responseText));
-			};
-			request.onreadystatechange = function () {
-				if (request.readyState === 4 && request.status === 200) {
-					this.onload();
-				}
-			};
-
-			request.send();
-			return request;
-		},
-
-		_searchInLayer: function (layer, retRecords, propName) {
-			var self = this, loc;
-
-			if (layer instanceof L.Control.Search.Marker)
-				return;
-
-			if (layer instanceof L.Marker || layer instanceof L.CircleMarker)
-			{
-				if (self._getPath(layer.options, propName))
-				{
-					loc = layer.getLatLng();
-					loc.layer = layer;
-					retRecords[ self._getPath(layer.options, propName) ] = loc;
-				} else if (self._getPath(layer.feature.properties, propName))
-				{
-					loc = layer.getLatLng();
-					loc.layer = layer;
-					retRecords[ self._getPath(layer.feature.properties, propName) ] = loc;
-				} else {
-					//throw new Error("propertyName '"+propName+"' not found in marker"); 
-					console.warn("propertyName '" + propName + "' not found in marker");
-				}
-			} else if (layer instanceof L.Path || layer instanceof L.Polyline || layer instanceof L.Polygon)
-			{
-				if (self._getPath(layer.options, propName))
-				{
-					loc = layer.getBounds().getCenter();
-					loc.layer = layer;
-					retRecords[ self._getPath(layer.options, propName) ] = loc;
-				} else if (self._getPath(layer.feature.properties, propName))
-				{
-					loc = layer.getBounds().getCenter();
-					loc.layer = layer;
-					retRecords[ self._getPath(layer.feature.properties, propName) ] = loc;
-				} else {
-					//throw new Error("propertyName '"+propName+"' not found in shape"); 
-					console.warn("propertyName '" + propName + "' not found in shape");
-				}
-			} else if (layer.hasOwnProperty('feature'))//GeoJSON
-			{
-				if (layer.feature.properties.hasOwnProperty(propName))
-				{
-					if (layer.getLatLng && typeof layer.getLatLng === 'function') {
-						loc = layer.getLatLng();
-						loc.layer = layer;
-						retRecords[ layer.feature.properties[propName] ] = loc;
-					} else if (layer.getBounds && typeof layer.getBounds === 'function') {
-						loc = layer.getBounds().getCenter();
-						loc.layer = layer;
-						retRecords[ layer.feature.properties[propName] ] = loc;
-					} else {
-						console.warn("Unknown type of Layer");
-					}
-				} else {
-					//throw new Error("propertyName '"+propName+"' not found in feature");
-					console.warn("propertyName '" + propName + "' not found in feature");
-				}
-			} else if (layer instanceof L.LayerGroup)
-			{
-				layer.eachLayer(function (layer) {
-					self._searchInLayer(layer, retRecords, propName);
-				});
-			}
-		},
-
-		_recordsFromLayer: function () {	//return table: key,value from layer
-			var self = this,
-				retRecords = {},
-				propName = this.options.propertyName;
-
-			this._layer.eachLayer(function (layer) {
-				self._searchInLayer(layer, retRecords, propName);
-			});
-
-			return retRecords;
-		},
-
 		_autoType: function () {
-
-			//TODO implements autype without selection(useful for mobile device)
-
 			var start = this._input.value.length,
 				firstRecord = this._tooltip.firstChild ? this._tooltip.firstChild._text : '',
 				end = firstRecord.length;
 
-			if (firstRecord.indexOf(this._input.value) === 0) { // If prefix match
+			if (firstRecord.indexOf(this._input.value) === 0) { 
 				this._input.value = firstRecord;
 				this._handleAutoresize();
 
@@ -711,38 +488,39 @@
 
 		_hideAutoType: function () {	// deselect text:
 
-			var sel;
-			if ((sel = this._input.selection) && sel.empty) {
-				sel.empty();
-			} else if (this._input.createTextRange) {
-				sel = this._input.createTextRange();
-				sel.collapse(true);
-				var end = this._input.value.length;
-				sel.moveStart('character', end);
-				sel.moveEnd('character', end);
-				sel.select();
-			} else {
-				if (this._input.getSelection) {
-					this._input.getSelection().removeAllRanges();
-				}
-				this._input.selectionStart = this._input.selectionEnd;
-			}
+			/*var sel;
+			 if ((sel = this._input.selection) && sel.empty) {
+			 sel.empty();
+			 } else if (this._input.createTextRange) {
+			 sel = this._input.createTextRange();
+			 sel.collapse(true);
+			 var end = this._input.value.length;
+			 sel.moveStart('character', end);
+			 sel.moveEnd('character', end);
+			 sel.select();
+			 } else {
+			 if (this._input.getSelection) {
+			 this._input.getSelection().removeAllRanges();
+			 }
+			 this._input.selectionStart = this._input.selectionEnd;
+			 }*/
+			console.log('hideautotype');
 		},
 
 		_handleKeypress: function (e) {	//run _input keyup event
 			var self = this;
+			console.log('keypress');
 
 			switch (e.keyCode)
 			{
 				case 27://Esc
-					this.collapse();
-					break;
 				case 13://Enter
-					if (this._countertips == 1 || (this.options.firstTipSubmit && this._countertips > 0)) {
+					console.log("enter");
+				/*	if (this._countertips == 1 || (this.options.firstTipSubmit && this._countertips > 0)) {
 						if (this._tooltip.currentSelection == -1) {
 							this._handleArrowSelect(1);
 						}
-					}
+					}*/
 					this._handleSubmit();	//do search
 					break;
 				case 38://Up
@@ -764,84 +542,9 @@
 				case 36://Home
 					break;
 				default://All keys
-					//if (this._input.value.length)
-					if (true)
-						this._cancel.style.display = 'block';
-					else
-					//this._cancel.style.display = 'none';
-
-					if (this._input.value.length >= this.options.minLength)
-					{
-						clearTimeout(this.timerKeypress);	//cancel last search request while type in				
-						this.timerKeypress = setTimeout(function () {	//delay before request, for limit jsonp/ajax request
-
-							self._fillRecordsCache();
-
-						}, this.options.delayType);
-					}
 			}
 
 			this._handleAutoresize();
-		},
-
-		searchText: function (text) {
-			var code = text.charCodeAt(text.length);
-
-			this._input.value = text;
-
-			//this._input.style.display = 'block';
-			this.list_gemarkungsname.style.display = 'block';
-			this.list_fln.style.display = 'block';
-			this.list_fsn_zae.style.display = 'block';
-			this.list_fsn_nen.style.display = 'block';
-
-			L.DomUtil.addClass(this._container, 'search-exp');
-
-			this._autoTypeTmp = false;
-
-			this._handleKeypress({keyCode: code});
-		},
-
-		_fillRecordsCache: function () {
-
-			var self = this,
-				inputText = this._input.value, records;
-
-			if (this._curReq && this._curReq.abort)
-				this._curReq.abort();
-			//abort previous requests
-
-			L.DomUtil.addClass(this._container, 'search-load');
-
-			if (this.options.layer)
-			{
-				//TODO _recordsFromLayer must return array of objects, formatted from _formatData
-				this._recordsCache = this._recordsFromLayer();
-
-				records = this._filterData(this._input.value, this._recordsCache);
-
-				L.DomUtil.removeClass(this._container, 'search-load');
-			} else
-			{
-				if (this.options.sourceData)
-					this._retrieveData = this.options.sourceData;
-
-				else if (this.options.url)	//jsonp or ajax
-					this._retrieveData = this.options.jsonpParam ? this._recordsFromJsonp : this._recordsFromAjax;
-
-				this._curReq = this._retrieveData.call(this, inputText, function (data) {
-
-					self._recordsCache = self._formatData.call(self, data);
-
-					//TODO refact!
-					if (self.options.sourceData)
-						records = self._filterData(self._input.value, self._recordsCache);
-					else
-						records = self._recordsCache;
-
-					L.DomUtil.removeClass(self._container, 'search-load');
-				});
-			}
 		},
 
 		_handleAutoresize: function () {
@@ -890,44 +593,50 @@
 			}
 		},
 
-		_handleSubmit: function () {	//button and tooltip click and enter submit
+		_handleSubmit: function () {
 
 			this._hideAutoType();
+			console.log('handelsubmit');
 
 			this.hideAlert();
 			//this._hideTooltip();
 
-			if (this._input.style.display == 'none')	//on first click show _input only
+			if (this._input.style.display == 'none')
+			{ //on first click show _input only
 				this.expand();
-			else
+				console.log('_handleSubmit:');
+			} else
 			{
-				if (this._input.value === '')	//hide _input only
-					this.collapse();
-				else
-				{
-					var loc = this._getLocation(this._input.value);
+				var loc = this._getLocation(this._input.value);
+				this.showLocation(loc, this._input.value);
+				/*				if (this._input.value === '')	//hide _input only
+				 this.collapse();
+				 else
+				 {
+				 var loc = this._getLocation(this._input.value);
+				 
+				 if (loc === false)
+				 this.showAlert();
+				 else
+				 {
+				 this.showLocation(loc, this._input.value);
+				 this.fire('search:locationfound', {
+				 latlng: loc,
+				 text: this._input.value,
+				 layer: loc.layer ? loc.layer : null
+				 });
+				 }
+				 }*/
 
-					if (loc === false)
-						this.showAlert();
-					else
-					{
-						this.showLocation(loc, this._input.value);
-						this.fire('search:locationfound', {
-							latlng: loc,
-							text: this._input.value,
-							layer: loc.layer ? loc.layer : null
-						});
-					}
-				}
 			}
 		},
 
 		_getLocation: function (key) {	//extract latlng from _recordsCache
 
-			if (this._recordsCache.hasOwnProperty(key))
-				return this._recordsCache[key];//then after use .loc attribute
-			else
-				return false;
+			/*if (this._recordsCache.hasOwnProperty(key))
+			 return this._recordsCache[key];//then after use .loc attribute
+			 else
+			 return false;*/
 		},
 
 		_defaultMoveToLocation: function (latlng, title, map) {
@@ -937,21 +646,23 @@
 				this._map.panTo(latlng);
 		},
 
-		showLocation: function (latlng, title) {	//set location on map from _recordsCache
+		showLocation: function (latlng, title) {
 			var self = this;
-
-			self._map.once('moveend zoomend', function (e) {
-
-				if (self._markerSearch) {
-					self._markerSearch.addTo(self._map).setLatLng(latlng);
-				}
-
-			});
-
-			self._moveToLocation(latlng, title, self._map);
-			//FIXME autoCollapse option hide self._markerSearch before visualized!!
 			if (self.options.autoCollapse)
 				self.collapse();
+			/*
+			 self._map.once('moveend zoomend', function (e) {
+			 
+			 if (self._markerSearch) {
+			 self._markerSearch.addTo(self._map).setLatLng(latlng);
+			 }
+			 
+			 });
+			 
+			 self._moveToLocation(latlng, title, self._map);
+			 //FIXME autoCollapse option hide self._markerSearch before visualized!!
+			 if (self.options.autoCollapse)
+			 self.collapse();*/
 
 			return self;
 		}
