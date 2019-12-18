@@ -13,7 +13,6 @@
 	}
 })(function (L) {
 
-
 	L.Control.Search = L.Control.extend({
 
 		includes: L.version[0] === '1' ? L.Evented.prototype : L.Mixin.Events,
@@ -53,7 +52,6 @@
 			position: 'topleft',
 			marker: {//custom L.Marker or false for hide
 				icon: false, //custom L.Icon for maker location or false for hide
-				animate: true, //animate a circle over location found
 				circle: {
 					radius: 10,
 					weight: 3,
@@ -674,7 +672,6 @@
 
 		options: {
 			icon: new L.Icon.Default(),
-			animate: true,
 			circle: {
 				radius: 10,
 				weight: 3,
@@ -700,8 +697,6 @@
 			L.Marker.prototype.onAdd.call(this, map);
 			if (this._circleLoc) {
 				map.addLayer(this._circleLoc);
-				if (this.options.animate)
-					this.animate();
 			}
 		},
 
@@ -728,38 +723,6 @@
 				L.Marker.prototype._removeIcon.call(this);
 		},
 
-		animate: function () {
-			//TODO refact animate() more smooth! like this: http://goo.gl/DDlRs
-			if (this._circleLoc)
-			{
-				var circle = this._circleLoc,
-					tInt = 200, //time interval
-					ss = 5, //frames
-					mr = parseInt(circle._radius / ss),
-					oldrad = this.options.circle.radius,
-					newrad = circle._radius * 2,
-					acc = 0;
-
-				circle._timerAnimLoc = setInterval(function () {
-					acc += 0.5;
-					mr += acc;	//adding acceleration
-					newrad -= mr;
-
-					circle.setRadius(newrad);
-
-					if (newrad < oldrad)
-					{
-						clearInterval(circle._timerAnimLoc);
-						circle.setRadius(oldrad);//reset radius
-						//if(typeof afterAnimCall == 'function')
-						//afterAnimCall();
-						//TODO use create event 'animateEnd' in L.Control.Search.Marker 
-					}
-				}, tInt);
-			}
-
-			return this;
-		}
 	});
 
 	L.Map.addInitHook(function () {
