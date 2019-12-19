@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><wfs:StoredQueryDescription xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fes="http://www.opengis.net/fes/2.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" id="gemarkungsname_fln_fsn_zae">
+	<wfs:Parameter name="gemarkungsname" type="xs:string"/>
+	<wfs:Parameter name="fln" type="xs:string"/>
+	<wfs:Parameter name="fsn_zae" type="xs:string"/>
+	<wfs:QueryExpressionText isPrivate="false" language="urn:ogc:def:queryLanguage:OGC-WFS::WFS_QueryExpression" returnFeatureTypes="KRE_ALKIS:sg_flurstueck_f">
+		<wfs:Query wfs:typeNames="KRE_ALKIS:sg_flurstueck_f">
+			<fes:Filter xmlns:fes="http://www.opengis.org/fes/2.0">
+				<fes:And>
+					<fes:PropertyIsEqualTo>
+						<fes:PropertyName>
+							<fes:ValueReference>gemarkungsname</fes:ValueReference>
+						</fes:PropertyName>
+						<fes:Literal>${gemarkungsname}</fes:Literal>
+					</fes:PropertyIsEqualTo>
+					<fes:PropertyIsEqualTo>
+						<fes:PropertyName>
+							<fes:ValueReference>fln</fes:ValueReference>
+						</fes:PropertyName>
+						<fes:Literal>${fln}</fes:Literal>
+					</fes:PropertyIsEqualTo>
+					<fes:PropertyIsEqualTo>
+						<fes:PropertyName>
+							<fes:ValueReference>fsn_zae</fes:ValueReference>
+						</fes:PropertyName>
+						<fes:Literal>${fsn_zae}</fes:Literal>
+					</fes:PropertyIsEqualTo>
+				</fes:And>
+			</fes:Filter>
+		</wfs:Query>
+	</wfs:QueryExpressionText>
+</wfs:StoredQueryDescription>

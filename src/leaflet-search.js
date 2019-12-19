@@ -19,21 +19,19 @@
 
 		options: {
 			placeholder_gemarkungsname: 'Gemarkungsname_',
-			placeholder_fln: 'fln_',
+			placeholder_fln: '0',
 			placeholder_fsn_zae: 'fsn_zae_',
-			placeholder_fsn_nen: 'fsn_nen_	',
+			placeholder_fsn_nen: 'fsn_nen_',
 			url_list_gemarkungsnamen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:gemarkungsname&propertyName=gemarkungsname&outputFormat=JSON', //
 			url_list_fln: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fln&propertyName=fln&outputFormat=JSON', //
 			url_list_fsn_zae: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_zae&propertyName=fsn_zae&outputFormat=JSON', //
 			url_list_fsn_nen: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?service=WFS&request=GetFeature&version=2.0.0&typeNames=KRE_ALKIS:fsn_nen&propertyName=fsn_nen&outputFormat=JSON', //
-			url_list_result: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?request=GetFeature&service=WFS&version=2.0.0&StoredQuery_ID=gemarkungsname_fln_fsn_zae_sql_gemarkungsname&gemarkungsname=Beetz&fln=6&fsn_zae=97&fsn_nen=1&outputFormat=JSON',
-			propertyLoc: 'loc', //field for remapping location, using array: ['latname','lonname'] for select double fields(ex. ['lat','lon'] ) support dotted format: 'prop.subprop.title'
+			url_list_result: 'http://172.16.206.129:8080/geoserver/KRE_ALKIS/wfs?request=GetFeature&service=WFS&version=2.0.0&outputFormat=JSON',
 			propertyName: 'title', //property in marker.options(or feature.properties for vector layer) trough filter elements in layer,
 			moveToLocation: null, //callback run on location found, params: latlng, title, map
 			container: '', //container id to insert Search Control		
 			minLength: 1, //minimal text length for autocomplete
 			initial: true, //search elements only by initial text
-			casesensitive: false, //search elements in case sensitive text
 			delayType: 400, //delay while typing for show tooltip
 			autoResize: true, //autoresize on input change
 			collapsed: true, //collapse search control at startup
@@ -71,13 +69,8 @@
 				return obj[last];
 		},
 
-		_isObject: function (obj) {
-			return Object.prototype.toString.call(obj) === "[object Object]";
-		},
-
 		initialize: function (options) {
 			L.Util.setOptions(this, options || {});
-			this._moveToLocation = this.options.moveToLocation || this._defaultMoveToLocation;
 		},
 
 		onAdd: function (map) {
@@ -122,11 +115,9 @@
 
 		cancel: function () {
 			this._input.value = '';
-			this._handleKeypress({keyCode: 8});
 			this._input.focus();
 			this._cancel.style.display = 'none';
 			this.fire('search:cancel');
-
 
 			if (this.options.collapsed)
 			{
@@ -208,12 +199,6 @@
 
 			L.DomEvent
 				.disableClickPropagation(input)
-				.on(input, 'keyup', this._handleKeypress, this)
-				.on(input, 'paste', function (e) {
-					setTimeout(function (e) {
-						self._handleKeypress(e);
-					}, 10, e);
-				}, this)
 				.on(list_gemarkungsname, 'change', this._setFln, this)
 				.on(list_fln, 'change', this._setFsn_zae, this)
 				.on(list_fsn_zae, 'change', this._setFsn_nen, this);
@@ -303,6 +288,7 @@
 			var castedvalue = castedvalue.replace(")", "_");
 			var castedvalue = castedvalue.replace("(", "_");
 			var castedvalue = castedvalue.replace("-", "_");
+			var castedvalue = castedvalue.replace("ß", "_");
 
 			return castedvalue;
 
@@ -371,39 +357,6 @@
 			return fsn_nen_as_options;
 		},
 
-		_handleKeypress: function (e) {
-			var self = this;
-			console.log('keypress');
-
-			switch (e.keyCode)
-			{
-				case 27://Esc
-				case 13://Enter
-					console.log("enter");
-					this._handleSubmit();	//do search
-					break;
-				case 38://Up
-					this._handleArrowSelect(-1);
-					break;
-				case 40://Down
-					this._handleArrowSelect(1);
-					break;
-				case  8://Backspace
-				case 45://Insert
-				case 46://Delete
-					break;
-				case 37://Left
-				case 39://Right
-				case 16://Shift
-				case 17://Ctrl
-				case 35://End
-				case 36://Home
-					break;
-				default://All keys
-			}
-
-		},
-
 		_handleArrowSelect: function (velocity) {
 
 			var searchTips = this._tooltip.hasChildNodes() ? this._tooltip.childNodes : [];
@@ -434,32 +387,74 @@
 		},
 
 		_handleSubmit: function () {
-			console.log('submit');
 
-				this.expand();
-				console.log('sub real');
-				var xhttp_loc = new XMLHttpRequest();
-				xhttp_loc.onreadystatechange = function () {
-					if (this.readyState == 4 && this.status == 200) {
-					}
-				};
-				xhttp_loc.open("GET", this.options.url_list_result, false);
+			// Neede for open on start
+			this.expand();
+
+			var features = [];
+
+			var xhttp_loc = new XMLHttpRequest();
+			xhttp_loc.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+				}
+			};
+
+			if (this._castValue(this.list_gemarkungsname.value) == this.options.placeholder_gemarkungsname ||
+				this._castValue(this.list_fln.value) == this.options.placeholder_fln ||
+				this._castValue(this.list_fsn_zae.value) == this.options.placeholder_fsn_zae
+				)
+			{
+				// console.log('Not all filled in');
+			} else if
+				(this._castValue(this.list_fsn_nen.value) == this.options.placeholder_fsn_nen)
+			{
+				var url_result = this.options.url_list_result
+					+ "&StoredQuery_ID=gemarkungsname_fln_fsn_zae"
+					+ "&gemarkungsname=" + this._castValue(this.list_gemarkungsname.value)
+					+ "&fln=" + this._castValue(this.list_fln.value)
+					+ "&fsn_zae=" + this._castValue(this.list_fsn_zae.value)
+					+ "";
+				xhttp_loc.open("GET", url_result, false);
 				xhttp_loc.send();
 
 				var json = JSON.parse(xhttp_loc.responseText);
-				var features = json.features;
+				console.log(json);
+				features = json.features;
+			} else
+			{
+				var url_result = this.options.url_list_result
+					+ "&StoredQuery_ID=gemarkungsname_fln_fsn_zae_nen"
+					+ "&gemarkungsname=" + this._castValue(this.list_gemarkungsname.value)
+					+ "&fln=" + this._castValue(this.list_fln.value)
+					+ "&fsn_zae=" + this._castValue(this.list_fsn_zae.value)
+					+ "&fsn_nen=" + this._castValue(this.list_fsn_nen.value);
+				xhttp_loc.open("GET", url_result, false);
+				xhttp_loc.send();
 
-			features.forEach(function (entry) {
-					console.log(entry.properties.gemarkungsname);
-				});
+				var json = JSON.parse(xhttp_loc.responseText);
+				console.log(json);
+				features = json.features;
 
-				/*				var loc = this._getLocation();
-				 this.showLocation(loc, this._input.value);*/
-
+			}
+			console.log('clicked');
+			console.log(features);
 			
-		},
+			
+			var map = this._map;
+			features.forEach(function (entry) {
+				var latlng = L.latLng(entry.properties.obkx, entry.properties.obky);
+				console.log(latlng);
+				console.log(this._map);
+				
+				map.panTo(latlng);
 
-		_getLocation: function () {
+				console.log(entry.properties.gemarkungsname);
+				console.log(entry.properties.obkx);
+				console.log(entry.properties.obky);
+			});
+
+			//this.showLocation(loc, this._input.value);
+
 		},
 
 		_defaultMoveToLocation: function (latlng, title, map) {
